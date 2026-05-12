@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KBO 타격 주파수 — 한화 이글스 × 롯데 자이언츠</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #05070f;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Noto Sans KR', sans-serif;
+      padding: 24px;
+    }
+
+    .radio-wrap {
+      background: #0a0e1a;
+      border: 0.5px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 32px 28px;
+      width: 100%;
+      max-width: 520px;
+      color: #e8eaf0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .scanline {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(255,255,255,0.012) 3px,
+        rgba(255,255,255,0.012) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .content { position: relative; z-index: 1; }
+
+    /* ─── Header ─── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 22px;
+    }
+
+    .station-id {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 2px;
+    }
+
+    .on-air {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #ff4040;
+      letter-spacing: 1px;
+    }
+
+    .on-air-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #ff4040;
+      animation: blink 1.2s ease-in-out infinite;
+    }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+    /* ─── Team Cards ─── */
+    .teams-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .team-card {
+      border-radius: 10px;
+      padding: 14px 16px;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: all 0.25s;
+    }
+
+    .team-card.hanwha {
+      background: linear-gradient(135deg, #1a1208 0%, #2a1f08 100%);
+      border-color: rgba(255,165,0,0.3);
+    }
+
+    .team-card.lotte {
+      background: linear-gradient(135deg, #0d1a2a 0%, #0a1520 100%);
+      border-color: rgba(220,30,30,0.3);
+    }
+
+    .team-card.active.hanwha {
+      border-color: #ffa500;
+      box-shadow: 0 0 20px rgba(255,165,0,0.15);
+    }
+
+    .team-card.active.lotte {
+      border-color: #dc1e1e;
+      box-shadow: 0 0 20px rgba(220,30,30,0.15);
+    }
+
+    .team-name {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .hanwha .team-name { color: #ffa500; }
+    .lotte  .team-name { color: #dc1e1e; }
+
+    .team-freq {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: rgba(255,255,255,0.3);
+    }
+
+    .team-stats-mini {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .mini-stat {
+      font-size: 10px;
+      color: rgba(255,255,255,0.45);
+    }
+
+    .mini-stat span {
+      font-family: 'Share Tech Mono', monospace;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    .hanwha .mini-stat span { color: #ffa500; }
+    .lotte  .mini-stat span { color: #dc1e1e; }
+
+    /* ─── Freq Display ─── */
+    .freq-display {
+      background: #060910;
+      border: 0.5px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .freq-number {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 36px;
+      font-weight: 400;
+      letter-spacing: 2px;
+      transition: color 0.3s;
+    }
+
+    .freq-unit {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 2px;
+      margin-left: 6px;
+    }
+
+    .freq-meta {
+      font-size: 10px;
+      color: rgba(255,255,255,0.22);
+      margin-top: 4px;
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    .signal-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 28px;
+    }
+
+    .signal-bar {
+      width: 5px;
+      border-radius: 1px;
+      background: rgba(255,255,255,0.08);
+      transition: background 0.3s, height 0.4s cubic-bezier(0.23,1,0.32,1);
+    }
+
+    /* ─── Waveform ─── */
+    .waveform-container {
+      height: 84px;
+      position: relative;
+      margin-bottom: 20px;
+      overflow: hidden;
+      background: #060910;
+      border-radius: 10px;
+      border: 0.5px solid rgba(255,255,255,0.06);
+    }
+
+    canvas#wave {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ─── Events ─── */
+    .section-label {
+      font-size: 10px;
+      color: rgba(255,255,255,0.28);
+      letter-spacing: 2.5px;
+      margin-bottom: 10px;
+    }
+
+    .event-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .event-btn {
+      background: #0d1121;
+      border: 0.5px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 12px 8px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      color: rgba(255,255,255,0.7);
+      font-family: 'Noto Sans KR', sans-serif;
+      user-select: none;
+    }
+
+    .event-btn:hover {
+      background: #141929;
+      border-color: rgba(255,255,255,0.2);
+      transform: translateY(-1px);
+    }
+
+    .event-btn:active { transform: translateY(0); }
+
+    .ev-icon { font-size: 20px; display: block; margin-bottom: 5px; }
+    .ev-name { font-size: 12px; font-weight: 400; display: block; margin-bottom: 3px; }
+    .ev-freq { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: rgba(255,255,255,0.3); display: block; }
+
+    /* ─── Meters ─── */
+    .meters-section { margin-bottom: 18px; }
+
+    .meter-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 9px;
+    }
+
+    .meter-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+      width: 38px;
+      flex-shrink: 0;
+    }
+
+    .meter-track {
+      flex: 1;
+      height: 5px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 1s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+
+    .meter-value {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      width: 58px;
+      text-align: right;
+      color: rgba(255,255,255,0.35);
+      flex-shrink: 0;
+    }
+
+    /* ─── Log ─── */
+    .log-section {
+      background: #060910;
+      border: 0.5px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 12px 16px;
+      height: 108px;
+      overflow: hidden;
+    }
+
+    .log-entries {
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 4px;
+    }
+
+    .log-entry {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      opacity: 0;
+      animation: fadeIn 0.4s forwards;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    @keyframes fadeIn { to { opacity: 1; } }
+
+    .log-time { color: rgba(255,255,255,0.18); margin-right: 8px; }
+    .log-team-hw { color: #ffa500; }
+    .log-team-lt { color: #dc1e1e; }
+    .log-msg { color: rgba(255,255,255,0.55); }
+
+    /* ─── Bottom ─── */
+    .bottom-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 0.5px solid rgba(255,255,255,0.06);
+    }
+
+    .season-label {
+      font-size: 10px;
+      color: rgba(255,255,255,0.18);
+      letter-spacing: 0.5px;
+    }
+
+    .play-btn {
+      background: none;
+      border: 0.5px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 7px 18px;
+      color: rgba(255,255,255,0.55);
+      font-size: 11px;
+      cursor: pointer;
+      font-family: 'Noto Sans KR', sans-serif;
+      transition: all 0.2s;
+      letter-spacing: 0.5px;
+    }
+
+    .play-btn:hover { border-color: rgba(255,255,255,0.35); color: #fff; }
+    .play-btn.playing { color: #ff4040; border-color: rgba(255,64,64,0.45); }
+
+    @media (max-width: 480px) {
+      body { padding: 12px; }
+      .radio-wrap { padding: 20px 16px; }
+      .freq-number { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="radio-wrap">
+  <div class="scanline"></div>
+  <div class="content">
+
+    <div class="header">
+      <span class="station-id">KBO-FM 타격 주파수</span>
+      <span class="on-air"><span class="on-air-dot"></span>LIVE SIM</span>
+    </div>
+
+    <div class="teams-row">
+      <div class="team-card hanwha active" id="card-hw" onclick="selectTeam('hw')">
+        <div class="team-name">🦅 한화 이글스</div>
+        <div class="team-freq">88.7 MHz</div>
+        <div class="team-stats-mini">
+          <div class="mini-stat">안타율 <span id="hw-avg">.268</span></div>
+          <div class="mini-stat">홈런 <span id="hw-hr">1.1/경기</span></div>
+        </div>
+      </div>
+      <div class="team-card lotte" id="card-lt" onclick="selectTeam('lt')">
+        <div class="team-name">🦁 롯데 자이언츠</div>
+        <div class="team-freq">94.3 MHz</div>
+        <div class="team-stats-mini">
+          <div class="mini-stat">안타율 <span id="lt-avg">.261</span></div>
+          <div class="mini-stat">홈런 <span id="lt-hr">0.9/경기</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="freq-display">
+      <div>
+        <div>
+          <span class="freq-number" id="freq-num">88.7</span>
+          <span class="freq-unit">MHz</span>
+        </div>
+        <div class="freq-meta" id="event-name">STANDBY</div>
+      </div>
+      <div class="signal-bars" id="sig-bars">
+        <div class="signal-bar" style="height:8px"></div>
+        <div class="signal-bar" style="height:14px"></div>
+        <div class="signal-bar" style="height:20px"></div>
+        <div class="signal-bar" style="height:26px"></div>
+        <div class="signal-bar" style="height:20px"></div>
+      </div>
+    </div>
+
+    <div class="waveform-container">
+      <canvas id="wave"></canvas>
+    </div>
+
+    <div class="section-label">— 이벤트 시뮬레이션</div>
+
+    <div class="event-buttons">
+      <div class="event-btn" onclick="triggerEvent('hit')">
+        <span class="ev-icon">⚾</span>
+        <span class="ev-name">안타</span>
+        <span class="ev-freq" id="ev-hit-freq">88.7 MHz</span>
+      </div>
+      <div class="event-btn" onclick="triggerEvent('hr')">
+        <span class="ev-icon">💥</span>
+        <span class="ev-name">홈런</span>
+        <span class="ev-freq" id="ev-hr-freq">91.2 MHz</span>
+      </div>
+      <div class="event-btn" onclick="triggerEvent('bb')">
+        <span class="ev-icon">🚶</span>
+        <span class="ev-name">볼넷</span>
+        <span class="ev-freq" id="ev-bb-freq">86.5 MHz</span>
+      </div>
+    </div>
+
+    <div class="meters-section">
+      <div class="meter-row">
+        <span class="meter-label">안타</span>
+        <div class="meter-track"><div class="meter-fill" id="m-hit" style="width:0%"></div></div>
+        <span class="meter-value" id="mv-hit">—</span>
+      </div>
+      <div class="meter-row">
+        <span class="meter-label">홈런</span>
+        <div class="meter-track"><div class="meter-fill" id="m-hr" style="width:0%"></div></div>
+        <span class="meter-value" id="mv-hr">—</span>
+      </div>
+      <div class="meter-row">
+        <span class="meter-label">볼넷</span>
+        <div class="meter-track"><div class="meter-fill" id="m-bb" style="width:0%"></div></div>
+        <span class="meter-value" id="mv-bb">—</span>
+      </div>
+    </div>
+
+    <div class="log-section">
+      <div class="section-label" style="margin-bottom:8px;">— 이벤트 로그</div>
+      <div class="log-entries" id="log-entries"></div>
+    </div>
+
+    <div class="bottom-row">
+      <span class="season-label">2025 KBO 시즌 기반 확률</span>
+      <button class="play-btn" id="auto-btn" onclick="toggleAuto()">▶ 자동 재생</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const TEAMS = {
+    hw: {
+      name: '한화 이글스', freq: '88.7', color: '#ffa500',
+      hitRate: 0.268, hrPer9: 1.12, bbPer9: 3.8,
+      hitFreq: '88.7', hrFreq: '91.2', bbFreq: '86.5'
+    },
+    lt: {
+      name: '롯데 자이언츠', freq: '94.3', color: '#dc1e1e',
+      hitRate: 0.261, hrPer9: 0.98, bbPer9: 3.5,
+      hitFreq: '94.3', hrFreq: '97.1', bbFreq: '92.0'
+    }
+  };
+
+  const EVENT_CONFIG = {
+    hit: { label: '안타',  amp: 35, freqKey: 'hitFreq', msg: ['안타!', '깨끗한 안타', '우중간 안타', '좌전 안타', '중전 적시타'] },
+    hr:  { label: '홈런',  amp: 80, freqKey: 'hrFreq',  msg: ['홈런!!', '솔로 홈런', '투런 홈런', '담장을 넘겼다!', '백스크린 홈런!'] },
+    bb:  { label: '볼넷',  amp: 22, freqKey: 'bbFreq',  msg: ['볼넷', '사구 출루', '선구안 볼넷', '4구 진루', '밀어내기 볼넷'] }
+  };
+
+  let currentTeam = 'hw';
+  let isPlaying = false;
+  let autoTimer = null;
+  let wavePhase = 0;
+  let waveAmplitude = 12;
+  let waveTargetAmp = 12;
+
+  function selectTeam(id) {
+    currentTeam = id;
+    const t = TEAMS[id];
+    document.querySelectorAll('.team-card').forEach(c => c.classList.remove('active'));
+    document.getElementById('card-' + id).classList.add('active');
+    document.getElementById('freq-num').style.color = t.color;
+    document.getElementById('freq-num').textContent = t.freq;
+    document.getElementById('event-name').textContent = 'STANDBY';
+    updateMeters(id);
+    updateEventFreqs(id);
+  }
+
+  function updateMeters(id) {
+    const t = TEAMS[id];
+    const hitPct = (t.hitRate / 0.35 * 100).toFixed(1);
+    const hrPct  = (t.hrPer9 / 2.5  * 100).toFixed(1);
+    const bbPct  = (t.bbPer9 / 7.0  * 100).toFixed(1);
+    ['hit','hr','bb'].forEach(k => {
+      document.getElementById('m-' + k).style.background = t.color;
+    });
+    document.getElementById('m-hit').style.width  = Math.min(hitPct, 100) + '%';
+    document.getElementById('m-hr').style.width   = Math.min(hrPct,  100) + '%';
+    document.getElementById('m-bb').style.width   = Math.min(bbPct,  100) + '%';
+    document.getElementById('mv-hit').textContent = t.hitRate.toFixed(3).slice(1);
+    document.getElementById('mv-hr').textContent  = t.hrPer9.toFixed(2) + '/9이닝';
+    document.getElementById('mv-bb').textContent  = t.bbPer9.toFixed(1) + '/9이닝';
+  }
+
+  function updateEventFreqs(id) {
+    const t = TEAMS[id];
+    document.getElementById('ev-hit-freq').textContent = t.hitFreq + ' MHz';
+    document.getElementById('ev-hr-freq').textContent  = t.hrFreq  + ' MHz';
+    document.getElementById('ev-bb-freq').textContent  = t.bbFreq  + ' MHz';
+  }
+
+  function triggerEvent(type) {
+    const t = TEAMS[currentTeam];
+    const ev = EVENT_CONFIG[type];
+    document.getElementById('freq-num').textContent = t[ev.freqKey];
+    document.getElementById('event-name').textContent = ev.label.toUpperCase() + ' DETECTED';
+    waveTargetAmp = ev.amp;
+    setTimeout(() => { waveTargetAmp = 12; }, 1800);
+
+    const heights = { hr: [28,28,28,28,28], hit: [8,16,24,28,24], bb: [8,12,16,12,8] }[type];
+    Array.from(document.getElementById('sig-bars').children).forEach((b, i) => {
+      b.style.height = heights[i] + 'px';
+      b.style.background = t.color;
+      setTimeout(() => {
+        b.style.height = [8,14,20,26,20][i] + 'px';
+        b.style.background = 'rgba(255,255,255,0.08)';
+      }, 1600);
+    });
+
+    addLog(type, ev);
+  }
+
+  function addLog(type, ev) {
+    const isHW = currentTeam === 'hw';
+    const now = new Date();
+    const hh = now.getHours().toString().padStart(2,'0');
+    const mm = now.getMinutes().toString().padStart(2,'0');
+    const ss = now.getSeconds().toString().padStart(2,'0');
+    const msg = ev.msg[Math.floor(Math.random() * ev.msg.length)];
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.innerHTML =
+      `<span class="log-time">${hh}:${mm}:${ss}</span>` +
+      `<span class="${isHW ? 'log-team-hw' : 'log-team-lt'}">[${isHW ? 'HW' : 'LT'}]</span> ` +
+      `<span class="log-msg">${msg}</span>`;
+    const logEl = document.getElementById('log-entries');
+    logEl.prepend(entry);
+    while (logEl.children.length > 6) logEl.removeChild(logEl.lastChild);
+  }
+
+  function toggleAuto() {
+    isPlaying = !isPlaying;
+    const btn = document.getElementById('auto-btn');
+    if (isPlaying) {
+      btn.textContent = '⏹ 정지';
+      btn.classList.add('playing');
+      runAuto();
+    } else {
+      btn.textContent = '▶ 자동 재생';
+      btn.classList.remove('playing');
+      clearTimeout(autoTimer);
+    }
+  }
+
+  function runAuto() {
+    if (!isPlaying) return;
+    const teamIds = ['hw', 'lt'];
+    const randomTeam = teamIds[Math.floor(Math.random() * 2)];
+    if (currentTeam !== randomTeam) selectTeam(randomTeam);
+
+    const t = TEAMS[currentTeam];
+    const r = Math.random();
+    const hrProb  = t.hrPer9 / 27;
+    const bbProb  = t.bbPer9 / 27;
+    const hitProb = t.hitRate * 0.7;
+
+    if (r < hrProb) triggerEvent('hr');
+    else if (r < hrProb + bbProb) triggerEvent('bb');
+    else if (r < hrProb + bbProb + hitProb) triggerEvent('hit');
+
+    autoTimer = setTimeout(runAuto, 1500 + Math.random() * 2500);
+  }
+
+  /* ─── Waveform ─── */
+  const canvas = document.getElementById('wave');
+  const ctx = canvas.getContext('2d');
+
+  function resizeCanvas() {
+    canvas.width  = canvas.parentElement.offsetWidth;
+    canvas.height = canvas.parentElement.offsetHeight;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  function drawWave() {
+    resizeCanvas();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    waveAmplitude += (waveTargetAmp - waveAmplitude) * 0.08;
+
+    const W = canvas.width, H = canvas.height, midY = H / 2;
+    const color = TEAMS[currentTeam].color;
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = waveAmplitude > 30 ? 10 : 0;
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+
+    for (let x = 0; x <= W; x++) {
+      const p = x / W;
+      const noise = waveAmplitude > 20 ? (Math.random() - 0.5) * 4 : 0;
+      const y = midY
+        + Math.sin(wavePhase + p * Math.PI * 2 * 2.5) * waveAmplitude * 0.5
+        + Math.sin(wavePhase * 1.3 + p * Math.PI * 2 * 5.1) * waveAmplitude * 0.3
+        + Math.sin(wavePhase * 0.7 + p * Math.PI * 2 * 7.8) * waveAmplitude * 0.2
+        + noise;
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    ctx.globalAlpha = 0.12;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 0.5;
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.moveTo(0, midY);
+    ctx.lineTo(W, midY);
+    ctx.stroke();
+
+    ctx.globalAlpha = 1;
+    wavePhase += 0.04;
+    requestAnimationFrame(drawWave);
+  }
+
+  selectTeam('hw');
+  drawWave();
+</script>
+</body>
+</html>
